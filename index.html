@@ -38,22 +38,18 @@ const ITEMS = [
 const NEW_IN_IDS = [6, 4, 1, 12, 8, 11];
 const NEW_IN_ITEMS = NEW_IN_IDS.map(id => ITEMS.find(i => i.id === id));
 
-// ---- Simulated customer profiles with rolling historical/behavioral signals ----
-// In production these would be pulled from event logs (page views, cart events,
-// session telemetry) and a customer/order history table. Here they're mocked
-// so the scoring model below has something realistic to run on.
 const CUSTOMERS = {
   ash: {
     name: "Ash",
     avatar: "🧑",
     defaultSection: "women",
     signals: {
-      avgTimeOnProductPage: 92,      // seconds, site avg ~30s
-      repeatProductViews: 7,          // times re-visited same item this week
-      cartAddRemoveCycles: 5,         // add then remove, same session
+      avgTimeOnProductPage: 92,
+      repeatProductViews: 7,
+      cartAddRemoveCycles: 5,
       sessionsThisWeek: 6,
       avgItemsViewedBeforePurchase: 14,
-      cartAbandonRate: 0.71,          // 71% of carts started, not completed
+      cartAbandonRate: 0.71,
       pastOrderCount: 9,
       avgTimeToPurchaseDays: 8.4,
       supportContactsAboutChoosing: 2,
@@ -93,14 +89,8 @@ const CUSTOMERS = {
   },
 };
 
-
-// ---- DPS model ----
-// Stand-in for a trained gradient-boosted model. Each signal is normalized
-// against a rough site-average baseline, weighted by how predictive that
-// feature tends to be of indecision, then squashed into a 0-100 score.
-// Swap this function for a real model.predict(features) call in production.
 function predictDPS(signals) {
-  const norm = (val, baseline, cap) => Math.min(val / baseline, cap) / cap; // 0..1
+  const norm = (val, baseline, cap) => Math.min(val / baseline, cap) / cap;
   const features = {
     timeOnPage:        norm(signals.avgTimeOnProductPage, 30, 4),
     repeatViews:        norm(signals.repeatProductViews, 1, 5),
@@ -133,12 +123,6 @@ function itemsForSection(section) {
 
 function bestPicksFor(items, count = 2) {
   return [...items].sort((a, b) => b.rating - a.rating).slice(0, count);
-}
-
-function curatedGroupsFor(items) {
-  const byCat = {};
-  items.forEach(i => { (byCat[i.category] = byCat[i.category] || []).push(i); });
-  return Object.entries(byCat).slice(0, 3).map(([label, its]) => ({ label, items: its.slice(0, 3) }));
 }
 
 const CATEGORIES = ["All", "Outerwear", "Tops", "Bottoms", "Dresses", "Footwear", "Accessories"];
@@ -174,7 +158,7 @@ const FONT = "'Baloo Bhaijaan 2', sans-serif";
 
 function Stars({ rating, reviews }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
       <div style={{ display: "flex" }}>
         {"★★★★★".split("").map((s, i) => (
           <span key={i} style={{ color: i < Math.floor(rating) ? "#FFB930" : "#E5E0D5", fontSize: 12 }}>{s}</span>
@@ -209,7 +193,7 @@ function ItemCard({ item, accent, light, compact, highlight, reason, added, onTo
         transition: "box-shadow 0.15s, background 0.15s, border-color 0.15s",
       }}>
         {item.tag && (
-          <div style={{ position: "absolute", top: -12, left: 10 }}>
+          <div style={{ position: "absolute", top: -12, left: 6, zIndex: 2 }}>
             <Tag bg={light}>{item.tag}</Tag>
           </div>
         )}
@@ -218,10 +202,11 @@ function ItemCard({ item, accent, light, compact, highlight, reason, added, onTo
           border: `2px solid ${INK}`,
           height: 58,
           display: "flex", alignItems: "center", justifyContent: "center",
+          marginTop: item.tag ? 4 : 0
         }}>{item.img}</div>
-        <div style={{ fontWeight: 800, fontSize: 13, color: INK, lineHeight: 1.3 }}>{item.name}</div>
+        <div style={{ fontWeight: 800, fontSize: 13, color: INK, lineHeight: 1.3, minHeight: "2.6em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.name}</div>
         <Stars rating={item.rating} reviews={item.reviews} />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: 2 }}>
           <span style={{ fontWeight: 900, fontSize: 15, color: INK }}>£{item.price}</span>
           <div style={{
             width: 26, height: 26,
@@ -246,15 +231,16 @@ function ItemCard({ item, accent, light, compact, highlight, reason, added, onTo
         cursor: "pointer", position: "relative",
         boxShadow: added ? `4px 4px 0 ${accent}` : "3px 3px 0 rgba(0,0,0,0.1)",
         transition: "box-shadow 0.15s, background 0.15s, border-color 0.15s",
+        marginTop: (highlight || item.tag) ? 12 : 0
       }}
     >
       {highlight && (
-        <div style={{ position: "absolute", top: -13, left: 10 }}>
+        <div style={{ position: "absolute", top: -13, left: 10, zIndex: 2 }}>
           <Tag bg="#FFE177">⭐ TOP PICK</Tag>
         </div>
       )}
       {item.tag && !highlight && (
-        <div style={{ position: "absolute", top: -13, left: 10 }}>
+        <div style={{ position: "absolute", top: -13, left: 10, zIndex: 2 }}>
           <Tag>{item.tag}</Tag>
         </div>
       )}
@@ -304,9 +290,9 @@ function ModeTabs({ mode, onSwitch }) {
               background: active ? c.accent : "#fff",
               color: active ? "#fff" : INK,
               border: "none",
-              borderRight: i < 2 ? `2.5px solid ${INK}` : "none",
-              padding: "11px 8px",
-              fontSize: 13, fontWeight: 800, cursor: "pointer",
+              borderRight: i === 0 ? `2.5px solid ${INK}` : "none",
+              padding: "11px 6px",
+              fontSize: 12.5, fontWeight: 800, cursor: "pointer",
               fontFamily: FONT,
               transition: "background 0.15s, color 0.15s",
             }}
@@ -350,9 +336,6 @@ function SectionTabs({ section, onSwitch }) {
 
 function Carousel({ items, accent, light, added, onToggle }) {
   const trackRef = useRef(null);
-  const scrollBy = (dir) => {
-    if (trackRef.current) trackRef.current.scrollBy({ left: dir * 260, behavior: "smooth" });
-  };
   return (
     <div style={{ position: "relative" }}>
       <div
@@ -360,12 +343,12 @@ function Carousel({ items, accent, light, added, onToggle }) {
         style={{
           display: "flex", gap: 16,
           overflowX: "auto", scrollSnapType: "x mandatory",
-          paddingBottom: 6,
+          padding: "12px 2px 8px",
           scrollbarWidth: "none",
         }}
       >
         {items.map(item => (
-          <div key={item.id} style={{ minWidth: 220, scrollSnapAlign: "start" }}>
+          <div key={item.id} style={{ minWidth: 190, maxWidth: 220, scrollSnapAlign: "start", flex: 1 }}>
             <div
               onClick={() => onToggle(item.id)}
               style={{
@@ -378,7 +361,7 @@ function Carousel({ items, accent, light, added, onToggle }) {
                 transition: "box-shadow 0.15s, background 0.15s, border-color 0.15s",
               }}
             >
-              <div style={{ position: "absolute", top: -12, left: 10 }}>
+              <div style={{ position: "absolute", top: -12, left: 10, zIndex: 2 }}>
                 <Tag bg={light}>✦ New In</Tag>
               </div>
               <div style={{
@@ -389,7 +372,7 @@ function Carousel({ items, accent, light, added, onToggle }) {
               }}>{item.img}</div>
               <div style={{ fontWeight: 800, fontSize: 14, color: INK, lineHeight: 1.3 }}>{item.name}</div>
               <Stars rating={item.rating} reviews={item.reviews} />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: 2 }}>
                 <span style={{ fontWeight: 900, fontSize: 16, color: INK }}>£{item.price}</span>
                 <div style={{
                   width: 26, height: 26,
@@ -403,22 +386,6 @@ function Carousel({ items, accent, light, added, onToggle }) {
           </div>
         ))}
       </div>
-      <button onClick={() => scrollBy(-1)} aria-label="Previous" style={{
-        position: "absolute", left: -16, top: "38%",
-        width: 34, height: 34, borderRadius: "50%",
-        background: "#fff", border: `2.5px solid ${INK}`,
-        fontSize: 15, fontWeight: 800, cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: "2px 2px 0 rgba(0,0,0,0.15)",
-      }}>‹</button>
-      <button onClick={() => scrollBy(1)} aria-label="Next" style={{
-        position: "absolute", right: -16, top: "38%",
-        width: 34, height: 34, borderRadius: "50%",
-        background: "#fff", border: `2.5px solid ${INK}`,
-        fontSize: 15, fontWeight: 800, cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: "2px 2px 0 rgba(0,0,0,0.15)",
-      }}>›</button>
     </div>
   );
 }
@@ -436,8 +403,6 @@ function App() {
   const dpsScore = predictDPS(customer.signals);
   const band = dpsBand(dpsScore);
 
-  // Recompute recommended mode and default collection whenever the active
-  // customer changes, unless they've manually picked a different mode.
   useEffect(() => {
     setManualOverride(false);
     setMode(band.mode);
@@ -478,65 +443,63 @@ function App() {
       background: PAPER,
       fontFamily: FONT,
       display: "flex", flexDirection: "column", alignItems: "center",
-      padding: "0 0 70px",
+      padding: "0 0 100px",
     }}>
       <div style={{ width: "100%", maxWidth: 920 }}>
 
-        {/* Demo-only: simulated login switcher, so you can see the model react */}
+        {/* Demo switcher banner */}
         <div style={{
           background: INK, color: "#fff",
-          padding: "8px 24px",
+          padding: "8px 16px",
           display: "flex", alignItems: "center", justifyContent: "space-between",
-          fontSize: 12,
+          fontSize: 11, flexWrap: "wrap", gap: 8
         }}>
-          <span style={{ fontWeight: 700, opacity: 0.75 }}>DEMO · simulate a logged-in customer</span>
-          <div style={{ display: "flex", gap: 6 }}>
+          <span style={{ fontWeight: 700, opacity: 0.75 }}>DEMO · User Profiling</span>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             {Object.entries(CUSTOMERS).map(([key, c]) => (
               <button key={key} onClick={() => switchCustomer(key)} style={{
                 background: customerKey === key ? "#fff" : "transparent",
                 color: customerKey === key ? INK : "#fff",
                 border: "1.5px solid #fff",
                 borderRadius: 14,
-                padding: "4px 12px", fontSize: 12, fontWeight: 800,
+                padding: "2px 8px", fontSize: 11, fontWeight: 800,
                 cursor: "pointer", fontFamily: FONT,
-                display: "flex", alignItems: "center", gap: 5,
+                display: "flex", alignItems: "center", gap: 3,
               }}>{c.avatar} {c.name}</button>
             ))}
           </div>
         </div>
 
-        {/* Site header */}
+        {/* Fluid Header container */}
         <div style={{
           borderBottom: `3px solid ${INK}`,
-          padding: "20px 24px",
-          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "16px 16px",
+          display: "flex", flexDirection: "column", gap: 12,
+          alignItems: "center", justifyContent: "center",
         }}>
-          <div style={{ fontWeight: 800, fontSize: 24, color: INK }}>thread&co</div>
+          <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: 800, fontSize: 22, color: INK }}>thread&co</div>
+            <div style={{ color: INK, fontSize: 18 }}>🛍️</div>
+          </div>
           <SectionTabs section={section} onSwitch={switchSection} />
-          <div style={{
-            color: INK,
-            width: 36, height: 36,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20,
-          }}>🛍️</div>
         </div>
 
-        {/* Personalization banner — subtle, no model internals exposed */}
+        {/* Adaptive Personalized Alert Box */}
         {section !== SECTIONS.NEWIN && !manualOverride && mode === MODES.DECISIVE && (
           <div style={{
-            margin: "18px 24px 0",
+            margin: "14px 16px 0",
             background: cfg.light,
             border: `2px solid ${INK}`,
-            padding: "12px 16px",
-            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 14px",
+            display: "flex", alignItems: "flex-start", gap: 10,
           }}>
-            <span style={{ fontSize: 18 }}>{customer.avatar}</span>
+            <span style={{ fontSize: 18, marginTop: 2 }}>{customer.avatar}</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: INK }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: INK }}>
                 Hi {customer.name} — we think you might like these.
               </div>
-              <div style={{ fontSize: 11.5, color: "#9C9588", fontWeight: 600, marginTop: 2 }}>
-                A few refined options based on your history. Want to browse more instead?
+              <div style={{ fontSize: 11, color: "#9C9588", fontWeight: 600, marginTop: 2 }}>
+                Refined matching your activity history.
               </div>
             </div>
           </div>
@@ -544,54 +507,54 @@ function App() {
 
         {section !== SECTIONS.NEWIN && !manualOverride && mode === MODES.EXPLORE && (
           <div style={{
-            margin: "18px 24px 0",
+            margin: "14px 16px 0",
             background: cfg.light,
             border: `2px solid ${INK}`,
-            padding: "12px 16px",
-            display: "flex", alignItems: "center", gap: 10,
+            padding: "10px 14px",
+            display: "flex", alignItems: "flex-start", gap: 10,
           }}>
-            <span style={{ fontSize: 18 }}>{customer.avatar}</span>
+            <span style={{ fontSize: 18, marginTop: 2 }}>{customer.avatar}</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: INK }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: INK }}>
                 Hi {customer.name} — feel free to explore more.
               </div>
-              <div style={{ fontSize: 11.5, color: "#9C9588", fontWeight: 600, marginTop: 2 }}>
-                You like to see the full range, so here's everything — browse at your own pace.
+              <div style={{ fontSize: 11, color: "#9C9588", fontWeight: 600, marginTop: 2 }}>
+                You like to see the full range, so here's everything.
               </div>
             </div>
           </div>
         )}
 
-        {/* Intro */}
-        <div style={{ padding: "32px 24px 0" }}>
-          <h1 style={{ fontSize: 32, fontWeight: 800, color: INK, margin: 0 }}>
+        {/* Heading Typography block */}
+        <div style={{ padding: "24px 16px 0" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: INK, margin: 0 }}>
             {section === SECTIONS.NEWIN ? "Fresh off the rail" : section === SECTIONS.WOMEN ? "Women's collection" : "Men's collection"}
           </h1>
-          <p style={{ color: "#9C9588", fontSize: 15, margin: "6px 0 0", fontWeight: 600 }}>
+          <p style={{ color: "#9C9588", fontSize: 13.5, margin: "4px 0 0", fontWeight: 600 }}>
             {section === SECTIONS.NEWIN ? "The latest arrivals, swipe through at your own pace." : "However you like to shop — we'll match the pace."}
           </p>
         </div>
 
-        {/* Mode switcher (Women/Men only) */}
+        {/* System state banner toggler */}
         {section !== SECTIONS.NEWIN && (
-          <div style={{ padding: "20px 24px 0" }}>
+          <div style={{ padding: "16px 16px 0" }}>
             <ModeTabs mode={mode} onSwitch={switchMode} />
             <div style={{
-              marginTop: 14,
+              marginTop: 10,
               background: cfg.light,
               border: `2.5px solid ${cfg.accent}`,
-              padding: "10px 14px",
-              display: "flex", alignItems: "center", gap: 9,
+              padding: "8px 12px",
+              display: "flex", alignItems: "center", gap: 8,
             }}>
-              <span style={{ fontSize: 17 }}>{cfg.emoji}</span>
-              <span style={{ fontSize: 13, color: cfg.accent, fontWeight: 700 }}>{cfg.hint}</span>
+              <span style={{ fontSize: 15 }}>{cfg.emoji}</span>
+              <span style={{ fontSize: 12, color: cfg.accent, fontWeight: 700 }}>{cfg.hint}</span>
             </div>
           </div>
         )}
 
-        {/* Content */}
+        {/* View Layout Wrappers */}
         <div style={{
-          padding: "20px 24px 24px",
+          padding: "16px 16px 24px",
           opacity: fading ? 0 : 1,
           transform: fading ? "translateY(6px)" : "translateY(0)",
           transition: "opacity 0.15s, transform 0.15s",
@@ -602,7 +565,7 @@ function App() {
           )}
 
           {section !== SECTIONS.NEWIN && mode === MODES.DECISIVE && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 480, margin: "0 auto" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 480, margin: "0 auto" }}>
               {bestPicks.map((item, i) => (
                 <ItemCard
                   key={item.id}
@@ -615,26 +578,32 @@ function App() {
                   onToggle={() => toggle(item.id)}
                 />
               ))}
-              <div style={{ textAlign: "center", color: "#C2BCAE", fontSize: 13, fontWeight: 700 }}>
-                Just our top picks for you. Tap to add, or see everything if you'd rather.
+              <div style={{ textAlign: "center", color: "#C2BCAE", fontSize: 12, fontWeight: 700, marginTop: 6 }}>
+                Our personalized top selections.
               </div>
             </div>
           )}
 
           {section !== SECTIONS.NEWIN && mode === MODES.EXPLORE && (
             <div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
                 {CATEGORIES.map(cat => (
                   <button key={cat} onClick={() => setFilter(cat)} style={{
                     background: filter === cat ? cfg.accent : "#fff",
                     color: filter === cat ? "#fff" : INK,
                     border: `2.5px solid ${INK}`,
-                    padding: "6px 14px", fontSize: 12, fontWeight: 800,
+                    padding: "4px 10px", fontSize: 11, fontWeight: 800,
                     cursor: "pointer", fontFamily: FONT,
                   }}>{cat}</button>
                 ))}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+              
+              {/* Responsive Grid Replacement layout */}
+              <div style={{ 
+                display: "grid", 
+                gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", 
+                gap: 12 
+              }}>
                 {filtered.map(i => (
                   <ItemCard key={i.id} item={i} accent={cfg.accent} light={cfg.light} grid added={!!added[i.id]} onToggle={() => toggle(i.id)} />
                 ))}
@@ -643,28 +612,30 @@ function App() {
           )}
         </div>
 
-        {/* Added summary bar */}
+        {/* Global bottom sticky summary widget bar */}
         {addedCount > 0 && (
           <div style={{
-            position: "sticky", bottom: 0,
-            margin: "0 24px 24px",
+            position: "fixed", bottom: 12,
+            left: 12, right: 12,
+            zIndex: 999,
             background: "#FFF9E0",
             border: `2.5px solid ${INK}`,
-            padding: "12px 18px",
+            padding: "10px 14px",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             boxShadow: "4px 4px 0 rgba(0,0,0,0.15)",
           }}>
-            <div style={{ fontSize: 14, color: INK, fontWeight: 800 }}>
-              🛍️ {addedCount} item{addedCount > 1 ? "s" : ""} added · £{addedTotal.toFixed(2)}
+            <div style={{ fontSize: 13, color: INK, fontWeight: 800, whiteSpace: "nowrap", marginRight: 8 }}>
+              🛍️ {addedCount} added · £{addedTotal.toFixed(2)}
             </div>
             <button style={{
               background: "#FF6B4A", color: "#fff",
               border: `2.5px solid ${INK}`,
-              padding: "9px 20px", fontSize: 13, fontWeight: 800,
+              padding: "8px 14px", fontSize: 12, fontWeight: 800,
               cursor: "pointer", fontFamily: FONT,
-              boxShadow: "3px 3px 0 rgba(0,0,0,0.18)",
+              boxShadow: "2px 2px 0 rgba(0,0,0,0.18)",
+              whiteSpace: "nowrap"
             }}>
-              Continue to bag →
+              Bag →
             </button>
           </div>
         )}
